@@ -1,33 +1,61 @@
 # Increment Pubspec Version GitHub Action
 
-Essa GitHub Action incrementa automaticamente a versão no arquivo `pubspec.yaml` com base nas labels de Pull Requests (PR) ou nas mensagens de commit, criando novas tags para as versões incrementadas.
+This GitHub Action increments the version in your `pubspec.yaml` file based on PR labels or commit messages. It supports automatic tagging and pushing changes to the repository.
 
-## Permissões Necessárias
+## Features
 
-Certifique-se de que o repositório onde essa Action será usada tenha permissões para:
+- Increment version based on PR labels: `major`, `minor`, `patch`.
+- Increment version based on commit messages: detects keywords `major`, `minor`, `patch`.
+- Outputs the new version for use in subsequent steps (e.g., creating tags).
+- Configurable to enable or disable functionality on commit events.
 
-1. Permitir a criação de commits e tags.
-2. Usar o `GITHUB_TOKEN` com escopo padrão para commits e push.
+---
 
-Se você estiver usando um repositório privado ou precisa de permissões adicionais, configure um token com escopos adicionais em **Settings > Developer Settings > Personal Access Tokens**.
-
-## Atributos
+## Inputs
 
 ### `enable_on_commit`
-- Tipo: Booleano (`true` ou `false`)
-- Descrição: Habilita a funcionalidade para incrementar versões com base em mensagens de commit.
-- Padrão: `false`
+- **Description**: Enable functionality for commit events.
+- **Required**: No.
+- **Default**: `false`.
 
 ### `github_token`
-- Tipo: String
-- Descrição: Token do GitHub para autenticação e acesso a eventos de PR e commits.
+- **Description**: GitHub token for authenticating with the repository.
+- **Required**: Yes.
 
-## Exemplo de Pipeline
+---
 
-Aqui está um exemplo de uso dessa Action:
+## Outputs
+
+### `new_version`
+- **Description**: The incremented version from `pubspec.yaml`.
+
+---
+
+## Permissions Setup
+
+To allow this Action to push changes or create tags, ensure the appropriate permissions are configured:
+
+1. Add the following permissions block to your workflow file:
+
+    ```yaml
+    permissions:
+      contents: write
+    ```
+
+2. Ensure your repository settings allow workflows to have **Read and Write permissions**:
+
+    - Navigate to **Settings** > **Actions** > **General**.
+    - Under **Workflow permissions**, select **Read and write permissions**.
+    - Save the changes.
+
+---
+
+## Example Workflow
+
+Here is an example workflow to use this action:
 
 ```yaml
-name: Incrementar Versão no PR ou Commit
+name: Increment Version on PR or Commit
 
 on:
   pull_request:
@@ -37,28 +65,31 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
-  incrementar-versao:
+  increment-version:
     if: github.event.pull_request.merged == true || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Fazer checkout do código
+      - name: Checkout code
         uses: actions/checkout@v2
         with:
-          path: "increment-pubspec-version"
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configurar Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 16
 
-      - name: Executar Incremento de Versão
+      - name: Run Increment Pubspec Version
         uses: ./
         with:
           enable_on_commit: "true"
           github_token: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Criar Tag com Nova Versão
+      - name: Create Tag with New Version
         if: steps.increment_version.outputs.new_version
         run: |
           git config user.name "github-actions[bot]"
@@ -67,42 +98,72 @@ jobs:
           git push origin v${{ steps.increment_version.outputs.new_version }}
 ```
 
-## Funcionamento das Labels e Commits
+---
 
-### Labels de Pull Requests
-- **major**: Incrementa a versão principal (Exemplo: `1.0.0` para `2.0.0`).
-- **minor**: Incrementa a versão secundária (Exemplo: `1.0.0` para `1.1.0`).
-- **patch**: Incrementa a versão de correção (Exemplo: `1.0.0` para `1.0.1`).
+## Functionality Details
 
-### Mensagens de Commit
-As mensagens de commit devem conter as palavras-chave:
-- **major**: Para incrementos de versão principal.
-- **minor**: Para incrementos de versão secundária.
-- **patch**: Para incrementos de versão de correção.
+### Pull Request Labels
 
-### Exemplo de Commit
-```bash
-git commit -m "feat: adicionar nova funcionalidade (minor)"
-```
+- The Action checks for specific labels (`major`, `minor`, `patch`) when a PR is merged.
+- It increments the version in `pubspec.yaml` accordingly:
+  - `major`: Increments the major version (e.g., `1.0.0` -> `2.0.0`).
+  - `minor`: Increments the minor version (e.g., `1.0.0` -> `1.1.0`).
+  - `patch`: Increments the patch version (e.g., `1.0.0` -> `1.0.1`).
 
-## Testando Localmente
+### Commit Messages
 
-Para testar localmente, você pode usar a ferramenta [act](https://github.com/nektos/act):
+- When enabled (`enable_on_commit: true`), the Action parses commit messages for keywords (`major`, `minor`, `patch`).
+- It increments the version in `pubspec.yaml` based on the first detected keyword.
 
-1. Certifique-se de que o `act` está instalado.
-2. Execute o comando:
-   ```bash
-   act -W .github/workflows/increment-version.yml
-   ```
+### Outputs
 
-## Problemas Comuns
+- The new version is outputted as `new_version` for use in subsequent steps.
+- Example usage:
 
-### Erro de Permissão (`403`)
-Certifique-se de que o `GITHUB_TOKEN` tem permissões para criar commits e tags.
+    ```yaml
+    - name: Use New Version
+      run: |
+        echo "New version is ${{ steps.increment_version.outputs.new_version }}"
+    ```
 
-### Problema com o `dist/index.js`
-Garanta que o projeto foi buildado corretamente antes de ser usado:
-```bash
-npm run build
-```
+---
+
+## Troubleshooting
+
+### Error: `Permission to <repo>.git denied to github-actions[bot].`
+
+This occurs if the workflow lacks the necessary permissions. Ensure:
+
+1. The workflow includes:
+
+    ```yaml
+    permissions:
+      contents: write
+    ```
+
+2. The repository settings allow workflows to have write access.
+
+### Error: `Cannot find module dist/index.js`
+
+- Ensure the Action is built before use by running:
+
+    ```bash
+    npm install
+    npm run build
+    ```
+
+- Commit the `dist/` directory to your repository.
+
+---
+
+## Development and Testing
+
+To test the Action locally, use the [`act`](https://github.com/nektos/act) tool:
+
+1. Install `act`.
+2. Run the workflow locally:
+
+    ```bash
+    act -j increment-version
+    ```
 
