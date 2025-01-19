@@ -126,7 +126,7 @@ async function incrementVersion(labels: string[]) {
   fs.writeFileSync(pubspecPath, yaml.stringify(pubspec), "utf8");
   core.info(`Updated version for ${pubspec.version}`);
 
-  if (process.env.GITHUB_ACTIONS === "true" || process.env.CI === "true") {
+  if (process.env.GITHUB_ACTIONS === "true" && process.env.CI === "true") {
     await execCommand('git config --global user.name "github-actions[bot]"');
     await execCommand(
       'git config --global user.email "github-actions[bot]@users.noreply.github.com"'

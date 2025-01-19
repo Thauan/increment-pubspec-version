@@ -27,6 +27,8 @@ jobs:
 
       - name: Run Increment Pubspec Version
         id: increment_version
+        env:
+          CI: false
         uses: ./
         with:
           enable_on_commit: "true"
