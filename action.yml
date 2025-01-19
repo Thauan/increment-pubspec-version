@@ -1,0 +1,17 @@
+name: "Increment Pubspec Version"
+description: "Increments the version in pubspec.yaml based on PR labels or commit messages"
+author: "Thauan (https://github.com/Thauan)"
+inputs:
+  enable_on_commit:
+    description: "Enable the functionality on commit events"
+    required: false
+    default: "false"
+  github_token:
+    description: "GitHub token to access commit information"
+    required: true
+runs:
+  using: "node16"
+  main: "dist/index.js"
+branding:
+  icon: "tag"
+  color: "blue"
