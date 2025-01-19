@@ -11,28 +11,6 @@ Certifique-se de que o repositório onde essa Action será usada tenha permissõ
 
 Se você estiver usando um repositório privado ou precisa de permissões adicionais, configure um token com escopos adicionais em **Settings > Developer Settings > Personal Access Tokens**.
 
-## Configuração do Arquivo `action.yml`
-
-```yaml
-name: "Incrementar Versão no Pubspec"
-description: "Incrementa a versão no pubspec.yaml com base nas labels de PR ou mensagens de commit."
-author: "Thauan (https://github.com/Thauan)"
-inputs:
-  enable_on_commit:
-    description: "Habilita a funcionalidade em eventos de commit."
-    required: false
-    default: "false"
-  github_token:
-    description: "Token do GitHub para acesso às informações de commit."
-    required: true
-runs:
-  using: "node16"
-  main: "dist/index.js"
-branding:
-  icon: "tag"
-  color: "blue"
-```
-
 ## Atributos
 
 ### `enable_on_commit`
