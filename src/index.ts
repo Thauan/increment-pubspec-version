@@ -9,6 +9,7 @@ async function run() {
     const enableOnCommit = core.getInput("enable_on_commit") === "true";
     const { context } = github;
     const eventName = context.eventName;
+    let newVersion = "";
 
     if (eventName === "pull_request") {
       const pr = context.payload.pull_request;
@@ -18,11 +19,11 @@ async function run() {
       }
 
       const labels = pr.labels.map((label: any) => label.name);
-      await incrementVersion(labels);
+      newVersion = (await incrementVersion(labels)) || "";
     } else if (eventName === "push" && enableOnCommit) {
       const incrementType = await getIncrementTypeFromCommits();
       if (incrementType) {
-        await incrementVersion([incrementType]);
+        newVersion = (await incrementVersion([incrementType])) || "";
       } else {
         core.info(
           "Nenhuma palavra-chave encontrada nos commits. Nenhuma ação será tomada."
@@ -31,6 +32,11 @@ async function run() {
     } else {
       core.info("Nenhuma ação realizada. Evento não configurado.");
     }
+
+    core.info(`New version: ${newVersion}`);
+
+    // Definir a versão como output
+    core.setOutput("new_version", newVersion);
   } catch (error: any) {
     core.setFailed(error.message);
   }
@@ -42,6 +48,10 @@ async function getIncrementTypeFromCommits(): Promise<string | null> {
   const octokit = github.getOctokit(token);
 
   const commits = context.payload.commits || [];
+  if (commits.length === 0) {
+    core.info("Nenhum commit encontrado no payload do push.");
+    return null;
+  }
 
   for (const commit of commits) {
     const message = commit.message.toLowerCase();
@@ -72,6 +82,12 @@ async function incrementVersion(labels: string[]) {
   }
 
   const pubspecPath = "./pubspec.yaml";
+
+  if (!fs.existsSync(pubspecPath)) {
+    core.setFailed(`Arquivo ${pubspecPath} não encontrado.`);
+    return;
+  }
+
   const pubspecContent = fs.readFileSync(pubspecPath, "utf8");
   const pubspec = yaml.parse(pubspecContent);
 
@@ -105,7 +121,15 @@ async function incrementVersion(labels: string[]) {
   await execCommand(
     `git commit -m "chore: incrementa versão para ${newVersion}"`
   );
-  await execCommand("git push");
+
+  try {
+    await execCommand(`git push`);
+  } catch (error) {
+    core.warning(`Falha ao fazer push: ${error}`);
+    return newVersion;
+  }
+
+  return newVersion;
 }
 
 function execCommand(command: string): Promise<string> {
