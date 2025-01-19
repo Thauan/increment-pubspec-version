@@ -14,28 +14,25 @@ async function run() {
     if (eventName === "pull_request") {
       const pr = context.payload.pull_request;
       if (!pr) {
-        core.setFailed("Este evento não é um Pull Request.");
+        core.setFailed("This event is not a Pull Request.");
         return;
       }
 
-      const labels = pr.labels.map((label: any) => label.name);
-      newVersion = (await incrementVersion(labels)) || "";
+      const labels = pr?.labels?.map((label: any) => label.name) || [];
+      newVersion = await incrementVersion(labels);
     } else if (eventName === "push" && enableOnCommit) {
       const incrementType = await getIncrementTypeFromCommits();
       if (incrementType) {
         newVersion = (await incrementVersion([incrementType])) || "";
       } else {
-        core.info(
-          "Nenhuma palavra-chave encontrada nos commits. Nenhuma ação será tomada."
-        );
+        core.info("No keywords found in commits. No action will be taken.");
       }
     } else {
-      core.info("Nenhuma ação realizada. Evento não configurado.");
+      core.info("No action taken. Event not configured.");
     }
 
     core.info(`New version: ${newVersion}`);
 
-    // Definir a versão como output
     core.setOutput("new_version", newVersion);
   } catch (error: any) {
     core.setFailed(error.message);
@@ -49,7 +46,7 @@ async function getIncrementTypeFromCommits(): Promise<string | null> {
 
   const commits = context.payload.commits || [];
   if (commits.length === 0) {
-    core.info("Nenhum commit encontrado no payload do push.");
+    core.info("No commit found in push payload.");
     return null;
   }
 
@@ -64,6 +61,7 @@ async function getIncrementTypeFromCommits(): Promise<string | null> {
     }
   }
 
+  core.info("Nothing found in the push payload.");
   return null;
 }
 
@@ -77,14 +75,14 @@ async function incrementVersion(labels: string[]) {
   } else if (labels.includes("patch")) {
     incrementType = "patch";
   } else {
-    core.warning("Nenhuma label válida encontrada. Nenhuma ação será tomada.");
+    core.warning("No valid labels found. No action will be taken.");
     return;
   }
 
   const pubspecPath = "./pubspec.yaml";
 
   if (!fs.existsSync(pubspecPath)) {
-    core.setFailed(`Arquivo ${pubspecPath} não encontrado.`);
+    core.setFailed(`File ${pubspecPath} not found.`);
     return;
   }
 
@@ -93,12 +91,21 @@ async function incrementVersion(labels: string[]) {
 
   const currentVersion = pubspec.version;
   if (!currentVersion) {
-    core.setFailed("A versão atual não foi encontrada no pubspec.yaml.");
+    core.setFailed("Current version not found in pubspec.yaml.");
     return;
   }
 
-  const [major, minor, patch] = currentVersion.split(".").map(Number);
+  const [versionPart, buildNumberPart] = currentVersion.split("+");
+  const [major, minor, patch] = versionPart.split(".")?.map(Number);
+  const buildNumber = buildNumberPart ? parseInt(buildNumberPart, 10) : 0;
+
   let newVersion: string;
+  let newBuildNumber = buildNumber;
+
+  if (!incrementType) {
+    core.info("No increment performed. No valid label was provided.");
+    return currentVersion;
+  }
 
   if (incrementType === "major") {
     newVersion = `${major + 1}.0.0`;
@@ -108,35 +115,47 @@ async function incrementVersion(labels: string[]) {
     newVersion = `${major}.${minor}.${patch + 1}`;
   }
 
-  pubspec.version = newVersion;
-
-  fs.writeFileSync(pubspecPath, yaml.stringify(pubspec), "utf8");
-  console.log(`Versão atualizada para ${newVersion}`);
-
-  await execCommand('git config --global user.name "github-actions[bot]"');
-  await execCommand(
-    'git config --global user.email "github-actions[bot]@users.noreply.github.com"'
-  );
-  await execCommand(`git add ${pubspecPath}`);
-  await execCommand(
-    `git commit -m "chore: incrementa versão para ${newVersion}"`
-  );
-
-  try {
-    await execCommand(`git push`);
-  } catch (error) {
-    core.warning(`Falha ao fazer push: ${error}`);
-    return newVersion;
+  const incrementBuild = core.getInput("increment_build") === "true";
+  if (incrementBuild) {
+    newBuildNumber += 1;
   }
 
-  return newVersion;
+  pubspec.version =
+    newBuildNumber > 0 ? `${newVersion}+${newBuildNumber}` : newVersion;
+
+  fs.writeFileSync(pubspecPath, yaml.stringify(pubspec), "utf8");
+  core.info(`Updated version for ${pubspec.version}`);
+
+  if (process.env.GITHUB_ACTIONS === "true" || process.env.CI === "true") {
+    await execCommand('git config --global user.name "github-actions[bot]"');
+    await execCommand(
+      'git config --global user.email "github-actions[bot]@users.noreply.github.com"'
+    );
+    await execCommand(`git add ${pubspecPath}`);
+    await execCommand(
+      `git commit -m "chore: increment version to ${pubspec.version}"`
+    );
+
+    try {
+      await execCommand(`git push`);
+    } catch (error) {
+      core.warning(`Failed to push: ${error}`);
+      return pubspec.version;
+    }
+  } else {
+    core.info(
+      "We are not in the CI or GitHub Actions environment, the push will not be performed."
+    );
+  }
+
+  return pubspec.version;
 }
 
 function execCommand(command: string): Promise<string> {
   return new Promise((resolve, reject) => {
     exec(command, (error, stdout, stderr) => {
       if (error) {
-        reject(`Erro: ${stderr || error.message}`);
+        reject(`Error: ${stderr || error.message}`);
       } else {
         resolve(stdout.trim());
       }
@@ -144,4 +163,8 @@ function execCommand(command: string): Promise<string> {
   });
 }
 
-run();
+if (require.main === module) {
+  run();
+}
+
+export { run, getIncrementTypeFromCommits, incrementVersion, execCommand };

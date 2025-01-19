@@ -10,7 +10,9 @@ on:
 
 jobs:
   increment-version:
-    if: github.event.pull_request.merged == true || github.event_name == 'push'
+    if: |
+      (github.event_name == 'push' && github.event.head_commit.message != 'Merge pull request') ||
+      (github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

@@ -4,12 +4,16 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "build": "ncc build src/index.ts -o dist"
+    "build": "ncc build src/index.ts -o dist",
+    "test": "jest"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.0",
+    "@types/jest": "^29.5.14",
     "fs": "^0.0.1-security",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
     "yaml": "^2.7.0"
   },
   "devDependencies": {
