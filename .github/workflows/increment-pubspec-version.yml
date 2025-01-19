@@ -1,12 +1,12 @@
 name: Increment Version on PR or Commit
 
 on:
-  pull_request:
-    types:
-      - closed
   push:
     branches:
       - main
+  pull_request:
+    types:
+      - closed
 
 jobs:
   increment-version:
@@ -20,11 +20,18 @@ jobs:
         with:
           node-version: 16
 
+      - name: Build Action
+        run: npm ci && npm run build
+
       - name: Run Increment Pubspec Version
+        id: increment_version
         uses: ./
         with:
           enable_on_commit: "true"
           github_token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Verify pubspec.yaml
+        run: cat pubspec.yaml
       - name: Create Tag with New Version
         if: steps.increment_version.outputs.new_version
         run: |
