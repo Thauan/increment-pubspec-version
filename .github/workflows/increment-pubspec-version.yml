@@ -21,7 +21,7 @@ jobs:
           node-version: 16
 
       - name: Build Action
-        run: npm ci && npm run build
+        run: npm install && npm run build
 
       - name: Run Increment Pubspec Version
         id: increment_version
