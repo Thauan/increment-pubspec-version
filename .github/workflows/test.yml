@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      ALLOW_COMMIT: false
       CI: false
 
     steps:

@@ -1,11 +1,11 @@
 {
   "name": "increment-pubspec-version",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "build": "ncc build src/index.ts -o dist",
-    "test": "jest"
+    "test": "ALLOW_COMMIT=false CI=true jest --color"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",

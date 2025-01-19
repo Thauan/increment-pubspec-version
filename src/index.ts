@@ -67,6 +67,7 @@ async function getIncrementTypeFromCommits(): Promise<string | null> {
 
 async function incrementVersion(labels: string[]) {
   let incrementType: string | undefined;
+  let ALLOW_COMMIT: string = process.env.ALLOW_COMMIT || "true";
 
   if (labels.includes("major")) {
     incrementType = "major";
@@ -126,13 +127,10 @@ async function incrementVersion(labels: string[]) {
   fs.writeFileSync(pubspecPath, yaml.stringify(pubspec), "utf8");
   core.info(`Updated version for ${pubspec.version}`);
 
-  console.log({
-    GITHUB_ACTIONS: process.env.GITHUB_ACTIONS,
-    CI: process.env.CI,
-    env: process.env,
-  });
-
-  if (process.env.GITHUB_ACTIONS === "true" && process.env.CI === "true") {
+  if (
+    (process.env.GITHUB_ACTIONS === "true" || process.env.CI === "true") &&
+    ALLOW_COMMIT === "true"
+  ) {
     await execCommand('git config --global user.name "github-actions[bot]"');
     await execCommand(
       'git config --global user.email "github-actions[bot]@users.noreply.github.com"'
