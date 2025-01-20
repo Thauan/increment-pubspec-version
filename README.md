@@ -14,19 +14,28 @@ This GitHub Action increments the version in your `pubspec.yaml` file based on P
 ## Inputs
 
 ### `enable_on_commit`
+
 - **Description**: Enable functionality for commit events.
 - **Required**: No.
 - **Default**: `false`.
 
 ### `github_token`
+
 - **Description**: GitHub token for authenticating with the repository.
 - **Required**: Yes.
+
+### `increment_build`
+
+- **Description**: Defines whether the build number should be incremented
+- **Required**: No.
+- **Default**: `true`.
 
 ---
 
 ## Outputs
 
 ### `new_version`
+
 - **Description**: The incremented version from `pubspec.yaml`.
 
 ---
@@ -37,16 +46,16 @@ To allow this Action to push changes or create tags, ensure the appropriate perm
 
 1. Add the following permissions block to your workflow file:
 
-    ```yaml
-    permissions:
-      contents: write
-    ```
+   ```yaml
+   permissions:
+     contents: write
+   ```
 
 2. Ensure your repository settings allow workflows to have **Read and Write permissions**:
 
-    - Navigate to **Settings** > **Actions** > **General**.
-    - Under **Workflow permissions**, select **Read and write permissions**.
-    - Save the changes.
+   - Navigate to **Settings** > **Actions** > **General**.
+   - Under **Workflow permissions**, select **Read and write permissions**.
+   - Save the changes.
 
 ---
 
@@ -120,11 +129,11 @@ jobs:
 - The new version is outputted as `new_version` for use in subsequent steps.
 - Example usage:
 
-    ```yaml
-    - name: Use New Version
-      run: |
-        echo "New version is ${{ steps.increment_version.outputs.new_version }}"
-    ```
+  ```yaml
+  - name: Use New Version
+    run: |
+      echo "New version is ${{ steps.increment_version.outputs.new_version }}"
+  ```
 
 ---
 
@@ -136,10 +145,10 @@ This occurs if the workflow lacks the necessary permissions. Ensure:
 
 1. The workflow includes:
 
-    ```yaml
-    permissions:
-      contents: write
-    ```
+   ```yaml
+   permissions:
+     contents: write
+   ```
 
 2. The repository settings allow workflows to have write access.
 
@@ -147,10 +156,10 @@ This occurs if the workflow lacks the necessary permissions. Ensure:
 
 - Ensure the Action is built before use by running:
 
-    ```bash
-    npm install
-    npm run build
-    ```
+  ```bash
+  npm install
+  npm run build
+  ```
 
 - Commit the `dist/` directory to your repository.
 
@@ -163,7 +172,6 @@ To test the Action locally, use the [`act`](https://github.com/nektos/act) tool:
 1. Install `act`.
 2. Run the workflow locally:
 
-    ```bash
-    act -j increment-version
-    ```
-
+   ```bash
+   act -j increment-version
+   ```
