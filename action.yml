@@ -2,6 +2,10 @@ name: "Increment Pubspec Version"
 description: "Increments the version in pubspec.yaml based on PR labels or commit messages"
 author: "Thauan (https://github.com/Thauan)"
 inputs:
+  increment_build:
+    description: "Defines whether the build number should be incremented"
+    required: false
+    default: "true"
   enable_on_commit:
     description: "Enable the functionality on commit events"
     required: false
