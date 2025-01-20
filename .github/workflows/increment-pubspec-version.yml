@@ -30,10 +30,15 @@ jobs:
         uses: ./
         with:
           enable_on_commit: "true"
+          increment_build: "false"
           github_token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Verify pubspec.yaml
         run: cat pubspec.yaml
+
+      - name: Current pubspec.yaml version
+        run: |
+          Current pubspec.yaml Version: v${{ steps.increment_version.outputs.new_version }}
       - name: Create Tag with New Version
         if: steps.increment_version.outputs.new_version
         run: |
