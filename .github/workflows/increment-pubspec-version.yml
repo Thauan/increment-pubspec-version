@@ -30,6 +30,7 @@ jobs:
         uses: ./
         with:
           enable_on_commit: "true"
+          increment_build: "false"
           github_token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Verify pubspec.yaml
